@@ -1,174 +1,174 @@
-##################mynewgeneric
-transaction=[]
-minSupportCount=2
-
-def inputTransactionFromFile(fileName):
-    file1 = open(fileName,"r+")
-    while True:
-        line =file1.readline()
-        if not line:
-            return transaction
-
-        line = line.rstrip('\n')
-        listFromLine = line.split(",")
-        listFromLine.pop(0)
-        transaction.append(listFromLine)
-#EndOfFunction
-
-def createUniqueElementList(inputData):
-
-    uniqueElementList = []
-
-    for eachTransaction in inputData:
-        for element in eachTransaction:
-            if not element in uniqueElementList:
-                uniqueElementList.append(element)
-
-    #uniqueElementList.sort(reverse=True)
-    print(uniqueElementList)
-
-    return sorted(uniqueElementList)
-#EndOfFunction
-
-
-def canBeAcceptedAsL(threshold,dataset,uniqueElementList):
-    L=[]
-    supCountL=[]
-
-    for unique in uniqueElementList:
-        uniqueElement=unique.split(",")
-        supportCount=0
-        subset=""
-        print(len(uniqueElement))
-
-        for member in dataset:
-            flag=True
-            for i in range(0,len(uniqueElement)):
-                if uniqueElement[i] not in member:
-                    flag=False
-                    break
-
-            if flag==True:
-                supportCount+=1
-
-        if supportCount>=threshold:
-            L.append(unique)
-            supCountL.append(supportCount)
-
-    return L,supCountL
-#EndOfFunction
-
-
-
-def getNextL(L1):
-    length=len(L1)
-    LToReturn=set()
-
-    for i in range (0,length):
-        for j in range(i+1,length):
-            subset1=L1[i].split(",")
-            subset2=L1[j].split(",")
-            flag=True
-
-            for k in range(len(subset1)):
-                if(subset1[k]!=subset2[k]):
-                    flag=False
-
-            if flag:
-                listToappend=L1[i]+","+L1[j][len(subset2)-1]
-
-                print(listToappend)
-                LToReturn.add(listToappend)
-
-    return list(sorted(LToReturn))
-
-def isFrequent(nextL,L):
-
-    deleteList=[]
-
-    for row in nextL:
-        items=row.split(",")
-        itemLength=len(items)
-
-        flag=1
-
-        for outerloop in range (0,itemLength):
-
-            RowToCompare=""
-            rowLength=0
-            for innerloop in range(0,itemLength):
-                if outerloop!=innerloop:
-                   RowToCompare+=items[innerloop]
-                   rowLength+=1
-                   if rowLength!=itemLength-1:
-                       RowToCompare+=","
-
-            if RowToCompare not in L:
-                 flag=0
-                 break
-
-        if flag==0:
-            deleteList.append(row)
-
-
-    nextL=[item for item in nextL if item not in deleteList]
-    return nextL
-
-
-
-
-def apriori(transaction):
-
-    uniqueElementList=createUniqueElementList(transaction)
-    #print(uniqueElementList)
-
-    #acceptedL,supCntAccL
-
-    threshold=2
-    L1,L1_supportCount=canBeAcceptedAsL(threshold,transaction,uniqueElementList)
-    #print("L1: ")
-    #print(L1)
-    #print(L1_supportCount)
-
-    listToKeepLevels=[]
-    listSupportCount=[]
-    listToKeepLevels.append(L1)
-    listSupportCount.append(L1_supportCount)
-
-    print(L1)
-    while L1:
-        nextL=getNextL(L1)
-        nextL=isFrequent(nextL,L1)
-
-        dataset=[]
-
-        for tran in transaction:
-            strTran=""
-            for itemTran in range(len(tran)):
-                strTran+=tran[itemTran]
-
-            dataset.append(strTran)
-
-        level,levelSupCount=canBeAcceptedAsL(threshold,dataset,uniqueElementList)
-
-        listToKeepLevels.append(level)
-        listSupportCount.append(levelSupCount)
-
-    return listToKeepLevels,listSupportCount
-
-
 def main():
-    transaction=inputTransactionFromFile("AprioriDataset ")
-    print(transaction)
-
-    #All_L,supportCount_for_L=\
-    finalLevelList,finalLevelCountList=apriori(transaction)
-
-    print(finalLevelList)
-    print(finalLevelCountList)
-
-main()
+    dataset = readFile()
+    L1 = find_frequent_1_itemsets(dataset)
+    ItemsetsLevel, ItemsetsCounter = apriori(dataset)
+    Print(ItemsetsLevel, ItemsetsCounter)
+    given, conValue = Input()
+    Confidence(ItemsetsLevel, ItemsetsCounter, given, conValue)
 
 
+def readFile():
+    file = open("Transaction.txt", "r+")
+    dataset = list()
+    while True:
+        line = file.readline().strip()
+        item = line.split(" ")
+        if not line:
+            break
+        dataset.append(item[1])
+
+    return dataset
 
 
+def apriori(dataset):
+    threshold = 2
+    resultLevel = list()
+    resultCounter = list()
+
+    candidate = find_frequent_1_itemsets(dataset)
+    Level, L_count = has_Minimum_Support_Counter(dataset, candidate, threshold)
+    resultLevel.append(Level)
+    resultCounter.append(L_count)
+
+    while Level:
+        candidate = candidate_generator(Level)
+        candidate = has_frequent_subset(candidate, Level)
+        Level, L_count = has_Minimum_Support_Counter(
+            dataset, candidate, threshold)
+
+        resultLevel.append(Level)
+        resultCounter.append(L_count)
+
+    return resultLevel, resultCounter
+
+
+def has_Minimum_Support_Counter(dataset, L, threshold):
+    counter = list()
+    Level = list()
+    for a in L:
+        count = 0
+        items = a.split(",")
+        for bought in dataset:
+            flag = True
+            for i in range(len(items)):
+                if items[i] not in bought:
+                    flag = False
+                    break
+            if flag == True:
+                count += 1
+        if count >= threshold:
+            counter.append(count)
+            Level.append(a)
+    return Level, counter
+
+
+def has_frequent_subset(candidate, L):
+    toBeDeleted = list()
+    for elements in candidate:
+        items = elements.split(",")
+        itemLen = len(items)
+        flag = True
+        for j in range(itemLen):
+            subset = ""
+            subsetLen = 0
+            for k in range(itemLen):
+                if j != k:
+                	subset += items[k]
+                	subsetLen += 1
+                	if itemLen - 1 != subsetLen:
+                		subset += ","
+            if subset not in L:
+                flag = False
+                break
+
+        if flag == False:
+            toBeDeleted.append(elements)
+
+    candidate = [values for values in candidate if values not in toBeDeleted]
+    return candidate
+
+
+def candidate_generator(L):
+    candidate = set()
+    length = len(L)
+
+    for i in range(length):
+        for j in range(i + 1, length):
+            itemsI = L[i].split(",")
+            itemsJ = L[j].split(",")
+            flag = 1
+            for x in range(len(itemsI) - 1):
+                if itemsI[x] != itemsJ[x]:
+                    flag = 0
+            if flag:
+                new = L[i] + "," + itemsJ[-1]
+                candidate.add(new)
+
+    return list(sorted(candidate))
+
+
+def find_frequent_1_itemsets(dataset):
+    level1 = set()
+    for elements in dataset:
+        items = elements.split(",")
+        for i in range(len(items)):
+            level1.add(items[i])
+
+    return list(sorted(level1))
+
+
+def Print(Level, counter):
+    for i in range(len(Level)):
+        if not Level[i]:
+            break
+        print("Level %d: " % (i + 1))
+        print(Level[i])
+        for j in range(len(Level[i])):
+            print("'{0}'\t\t" .format(Level[i][j]), counter[i][j])
+
+
+def Input():
+
+        given = input("Given Ix,Iy\n")
+        conFor = input("Confidence For Iz)\n")
+        givenList = given.split(",")
+        conForList = conFor.split(",")
+
+        conValueList = list()
+        conValueList.extend(givenList)
+        conValueList.extend(conForList)
+        conValueList = sorted(conValueList)
+
+        conValue = ""
+        for i in range(len(conValueList)):
+        	conValue += conValueList[i]
+        	if i != len(conValueList) - 1:
+        		conValue += ","
+
+        return given, conValue
+
+
+
+def Confidence(Level, counter, given, conValue):
+    flagG, flagV = False, False
+    countG, countV = 0, 0
+    for i in range(len(Level)):
+        if given in Level[i]:
+            flagG = True
+            countG = counter[i] [Level[i].index(given)]
+        if conValue in Level[i]:
+            flagV = True
+            countV = counter[i] [Level[i].index(conValue)]
+
+        if flagG and flagV:
+            break
+
+    if flagG and flagV:
+        confidence = (countV / countG) * 100.0
+        print("Confidence of {0} GIVEN {1} : {2:.2f}%" .format(conValue, given, float(confidence)))
+    else:
+    	print("SPECIFIED ITEMS ARE INFREQUENT!")
+
+
+if __name__ == '__main__':
+    main()
